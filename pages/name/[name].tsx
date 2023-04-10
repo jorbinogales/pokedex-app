@@ -1,19 +1,21 @@
-import React, {Component, useEffect, useState} from 'react';
-import {Layout} from "@/layouts";
-import {GetStaticPaths, GetStaticProps, NextPage} from "next";
-import pokeApi from "@/api/pokeApi";
+import React, { useState} from 'react';
+import {GetStaticPaths, GetStaticProps, NextPage, } from "next";
 import {PokemonResponse} from "@/interfaces/PokemonResponse";
+import pokeApi from "@/api/pokeApi";
 import {Button, Card, Container, Grid, Image, Text} from "@nextui-org/react";
+import {Layout} from "@/layouts";
 import {getPokemonInfo, localFavorite} from "@/utils";
-import confetti from 'canvas-confetti';
+import confetti from "canvas-confetti";
+import {PokemonListResponse} from "@/interfaces/PokemonListResponse";
 
 interface Props {
     pokemon: PokemonResponse
 }
 
-const PokemonPage: NextPage<Props> = ({pokemon}) => {
+const PokemonByPageName: NextPage<Props> = ({pokemon}) => {
 
-    const [IsInFavorite, setIsInFavorite] = useState(localFavorite.existPokemonInFavorite(pokemon.id));
+    console.log(pokemon);
+    const [IsInFavorite, setIsInFavorite] = useState(localFavorite.existPokemonInFavorite(pokemon.id))
     const onToggleFavorite = () => {
         localFavorite.toggleFavorite(pokemon.id)
         setIsInFavorite(!IsInFavorite)
@@ -30,7 +32,6 @@ const PokemonPage: NextPage<Props> = ({pokemon}) => {
             }
         })
     }
-
     return (
         <Layout title={pokemon.name}>
             <Grid.Container gap={5} css={{marginTop: '5px'}}>
@@ -53,7 +54,7 @@ const PokemonPage: NextPage<Props> = ({pokemon}) => {
                                 <Button
                                     onPress={onToggleFavorite}
                                     color="gradient"
-                                    ghost={IsInFavorite ? false : true}
+                                    ghost={!IsInFavorite}
                                 >
                                     {IsInFavorite ? 'En Favoritos' : 'Guardar en Favoritos'}
                                 </Button>
@@ -97,12 +98,11 @@ const PokemonPage: NextPage<Props> = ({pokemon}) => {
 }
 
 export const getStaticPaths: GetStaticPaths = async (ctx) => {
-
-    const pokemonsArray = [...Array(151)].map((value, index) => `${index + 1}`);
-
+    const { data } = await pokeApi.get<PokemonListResponse>(`/pokemon?limit=151`);
+    const pokemonsArray: string[] = data.results.map(pokemon => pokemon.name);
     return {
-        paths: pokemonsArray.map(id => ({
-            params: {id}
+        paths: pokemonsArray.map(name => ({
+            params: {name}
         })),
         fallback: false,
     }
@@ -110,14 +110,14 @@ export const getStaticPaths: GetStaticPaths = async (ctx) => {
 
 export const getStaticProps: GetStaticProps = async ({params}) => {
 
-    const {id} = params as { id: string }
+    const { name } = params as { name: string }
 
     return ({
         props: {
-            pokemon: await getPokemonInfo(id)
+            pokemon: await getPokemonInfo(name)
         }
     })
+
 }
 
-
-export default PokemonPage
+export default PokemonByPageName;
